@@ -7,9 +7,24 @@ spring:
       discovery:
         locator:
           enabled: true
+          lower-case-service-id: true
+          filters:
+            - name: HttpRequestCounter
+              args:
+               instanceTag: "uri.toString()"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    env:
+      post:
+        enabled: true
 
 server:
-  port: 10000
+  port: 11000
 
 eureka:
   client:
