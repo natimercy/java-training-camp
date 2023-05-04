@@ -83,7 +83,7 @@ public class ServiceDiscoveryDemo {
                 .address("127.0.0.1")
                 .port(8080)
                 .serviceType(ServiceType.PERMANENT)
-                .payload(Map.of("A", "1"))
+                // .payload(Map.of("A", "1"))
                 .registrationTimeUTC(clock.millis())
                 .build();
         return instance;

@@ -39,7 +39,7 @@ public class AtomikosSample {
         AtomikosDataSourceBean atomikosDataSourceBean1 = getAtomikosDataSourceBean(jdbcURL1);
 
         // MySQL 在 Docker 容器
-        String jdbcURL2 = "jdbc:mysql://127.0.0.1:13306/test";
+        String jdbcURL2 = "jdbc:mysql://192.168.232.130:3306/test";
         AtomikosDataSourceBean atomikosDataSourceBean2 = getAtomikosDataSourceBean(jdbcURL2);
 
         UserTransaction userTransaction = new UserTransactionImp();
