@@ -64,12 +64,29 @@ public class ServiceInvocationHandler implements InvocationHandler {
         // 非 Object 方法实行远程调用
         InvocationRequest request = createRequest(method, args);
 
-        return execute(request, proxy);
-    }
-
-    private Object execute(InvocationRequest request, Object proxy) {
         // 在 RPC 服务集群中选择其中一个实例（负载均衡）
         ServiceInstance serviceInstance = selectServiceProviderInstance();
+
+        List<RequestInterceptor> interceptors = this.rpcClient.getInterceptors();
+        for (RequestInterceptor interceptor : interceptors) {
+            if (!interceptor.supported(request, serviceInstance)) {
+                continue;
+            }
+            interceptor.beforeInvoke(request, serviceInstance);
+        }
+
+        Object result = null;
+        try {
+            result = execute(request, proxy, serviceInstance);
+            triggerCompletion(request, serviceInstance, result, null);
+        } catch (Throwable ex) {
+            triggerCompletion(request, serviceInstance, result, ex);
+        }
+
+        return result;
+    }
+
+    private Object execute(InvocationRequest request, Object proxy, ServiceInstance serviceInstance) {
         // 与目标 RPC 服务器建联
         ChannelFuture channelFuture = rpcClient.connect(serviceInstance);
         // 发送请求（消息），关联 requestId
@@ -128,5 +145,11 @@ public class ServiceInvocationHandler implements InvocationHandler {
 
     private boolean isObjectDeclaredMethod(Method method) {
         return Object.class == method.getDeclaringClass();
+    }
+
+    public void triggerCompletion(InvocationRequest request, ServiceInstance serviceInstance, Object result, Throwable ex) {
+        for (RequestInterceptor interceptor : this.rpcClient.getInterceptors()) {
+            interceptor.afterInvoke(request, serviceInstance, result, ex);
+        }
     }
 }

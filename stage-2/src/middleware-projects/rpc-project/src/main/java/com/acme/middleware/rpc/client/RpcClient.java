@@ -22,6 +22,7 @@ import com.acme.middleware.rpc.loadbalancer.ServiceInstanceSelector;
 import com.acme.middleware.rpc.service.ServiceInstance;
 import com.acme.middleware.rpc.service.discovery.ServiceDiscovery;
 import com.acme.middleware.rpc.transport.InvocationResponseHandler;
+import com.acme.middleware.rpc.util.ServiceLoaders;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
@@ -33,7 +34,9 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 
 /**
  * 客户端引导程序
@@ -50,6 +53,8 @@ public class RpcClient implements AutoCloseable {
     private final Bootstrap bootstrap;
 
     private final EventLoopGroup group;
+
+    private final List<RequestInterceptor> interceptors;
 
     public RpcClient(ServiceDiscovery serviceDiscovery, ServiceInstanceSelector selector) {
         this.serviceDiscovery = serviceDiscovery;
@@ -71,6 +76,7 @@ public class RpcClient implements AutoCloseable {
                 });
 
         serviceDiscovery.initialize((Map) System.getProperties());
+        this.interceptors = ServiceLoaders.load(RequestInterceptor.class);
     }
 
     public RpcClient() {
@@ -100,6 +106,10 @@ public class RpcClient implements AutoCloseable {
 
     protected Bootstrap getBootstrap() {
         return bootstrap;
+    }
+
+    public List<RequestInterceptor> getInterceptors() {
+        return interceptors;
     }
 
     @Override

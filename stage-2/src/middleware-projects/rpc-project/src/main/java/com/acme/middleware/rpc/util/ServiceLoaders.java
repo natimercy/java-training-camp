@@ -16,7 +16,7 @@
  */
 package com.acme.middleware.rpc.util;
 
-import java.util.ServiceLoader;
+import java.util.*;
 
 /**
  * {@link ServiceLoader} 工具类
@@ -28,5 +28,15 @@ public abstract class ServiceLoaders {
 
     public static <T> T loadDefault(Class<T> serviceClass) {
         return ServiceLoader.load(serviceClass).iterator().next();
+    }
+
+    public static <T> List<T> load(Class<T> serviceClass) {
+        ServiceLoader<T> serviceLoader = ServiceLoader.load(serviceClass);
+        Iterator<T> iterator = serviceLoader.iterator();
+        List<T> instances = new ArrayList<>();
+        while (iterator.hasNext()) {
+            instances.add(iterator.next());
+        }
+        return instances;
     }
 }

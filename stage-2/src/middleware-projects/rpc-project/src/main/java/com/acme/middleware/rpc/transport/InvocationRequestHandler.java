@@ -19,6 +19,7 @@ package com.acme.middleware.rpc.transport;
 import com.acme.middleware.rpc.InvocationRequest;
 import com.acme.middleware.rpc.InvocationResponse;
 import com.acme.middleware.rpc.context.ServiceContext;
+import com.acme.middleware.rpc.server.RpcInvokeInterceptor;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.apache.commons.lang3.reflect.MethodUtils;
@@ -26,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * {@link InvocationRequest} 处理器
@@ -39,8 +41,11 @@ public class InvocationRequestHandler extends SimpleChannelInboundHandler<Invoca
 
     private final ServiceContext serviceContext;
 
-    public InvocationRequestHandler(ServiceContext serviceContext) {
+    private final List<RpcInvokeInterceptor> interceptors;
+
+    public InvocationRequestHandler(ServiceContext serviceContext, List<RpcInvokeInterceptor> interceptors) {
         this.serviceContext = serviceContext;
+        this.interceptors = interceptors;
     }
 
     @Override
@@ -55,6 +60,10 @@ public class InvocationRequestHandler extends SimpleChannelInboundHandler<Invoca
         Object entity = null;
         String errorMessage = null;
         try {
+            for (RpcInvokeInterceptor interceptor : interceptors) {
+                interceptor.beforeInvoke(service, request);
+            }
+
             entity = MethodUtils.invokeMethod(service, methodName, parameters, parameterTypes);
         } catch (Exception e) {
             errorMessage = e.getMessage();
@@ -67,6 +76,10 @@ public class InvocationRequestHandler extends SimpleChannelInboundHandler<Invoca
         response.setRequestId(request.getRequestId());
         response.setEntity(entity);
         response.setErrorMessage(errorMessage);
+
+        for (RpcInvokeInterceptor interceptor : interceptors) {
+            interceptor.afterInvoke(service, request, response);
+        }
 
         ctx.writeAndFlush(response);
 

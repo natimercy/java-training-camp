@@ -24,6 +24,7 @@ import com.acme.middleware.rpc.service.DefaultServiceInstance;
 import com.acme.middleware.rpc.service.ServiceInstance;
 import com.acme.middleware.rpc.service.discovery.ServiceDiscovery;
 import com.acme.middleware.rpc.transport.InvocationRequestHandler;
+import com.acme.middleware.rpc.util.ServiceLoaders;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -38,6 +39,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,11 +68,14 @@ public class RpcServer implements AutoCloseable {
 
     private Channel channel;
 
+    private final List<RpcInvokeInterceptor> interceptors;
+
     public RpcServer(String applicationName, int port) {
         this.applicationName = applicationName;
         this.port = port;
         this.serviceContext = ServiceContext.DEFAULT;
         this.serviceDiscovery = ServiceDiscovery.DEFAULT;
+        this.interceptors = ServiceLoaders.load(RpcInvokeInterceptor.class);
     }
 
     private ServiceInstance createLocalServiceInstance() throws Exception {
@@ -111,7 +116,7 @@ public class RpcServer implements AutoCloseable {
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline().addLast("message-encoder", new MessageEncoder());
                         ch.pipeline().addLast("message-decoder", new MessageDecoder());
-                        ch.pipeline().addLast("request-handler", new InvocationRequestHandler(serviceContext));
+                        ch.pipeline().addLast("request-handler", new InvocationRequestHandler(serviceContext,interceptors));
                     }
                 });
 
