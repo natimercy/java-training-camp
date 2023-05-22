@@ -2,6 +2,8 @@ package com.acme.distributed.config.client;
 
 import com.acme.distributed.config.common.ApiResponse;
 import com.acme.distributed.config.common.ConfigEntry;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -33,7 +35,17 @@ public class ConfigClient {
         Map<String, Object> uriVariables = new HashMap<>();
         uriVariables.put(DATA_ID, dataId);
         String url = "http://" + serverAddr + Constants.GET_CONFIG_PATH + "/?dataId={dataId}";
-        ResponseEntity<ApiResponse> responseEntity = restTemplate.getForEntity(url, ApiResponse.class, uriVariables);
-        return (ConfigEntry) responseEntity.getBody().getBody();
+
+        ParameterizedTypeReference<ApiResponse<ConfigEntry>> typeReference = new ParameterizedTypeReference<ApiResponse<ConfigEntry>>() {
+        };
+        ResponseEntity<ApiResponse<ConfigEntry>> responseEntity = restTemplate.exchange(url, HttpMethod.GET, null,
+                typeReference, uriVariables);
+        if (responseEntity.getStatusCode().is2xxSuccessful()) {
+            ApiResponse<ConfigEntry> response = responseEntity.getBody();
+            assert response != null;
+            return response.getBody();
+        }
+
+        return null;
     }
 }
